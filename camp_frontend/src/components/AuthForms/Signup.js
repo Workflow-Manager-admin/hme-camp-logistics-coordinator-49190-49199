@@ -15,6 +15,37 @@ const Signup = ({ onSuccess, onToggleView }) => {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
 
+  const validateInvite = async (token, userEmail) => {
+    const { data, error } = await supabase
+      .from('invites')
+      .select('*')
+      .eq('token', token)
+      .eq('email', userEmail)
+      .eq('used', false)
+      .single();
+
+    if (error) {
+      throw new Error('Invalid or expired invite token');
+    }
+    
+    if (!data) {
+      throw new Error('Invite token does not match the provided email');
+    }
+
+    return data;
+  };
+
+  const markInviteAsUsed = async (inviteId) => {
+    const { error } = await supabase
+      .from('invites')
+      .update({ used: true, used_at: new Date().toISOString() })
+      .eq('id', inviteId);
+
+    if (error) {
+      console.error('Failed to mark invite as used:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -22,17 +53,8 @@ const Signup = ({ onSuccess, onToggleView }) => {
     setMessage(null);
 
     try {
-      // First verify the invite token
-      // Note: You'll need to implement this validation on your Supabase backend
-      const { data: inviteData, error: inviteError } = await supabase
-        .from('invites')
-        .select('*')
-        .eq('token', inviteToken)
-        .single();
-
-      if (inviteError || !inviteData) {
-        throw new Error('Invalid or expired invite token');
-      }
+      // First validate the invite token
+      const inviteData = await validateInvite(inviteToken, email);
 
       // Proceed with signup
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -40,13 +62,17 @@ const Signup = ({ onSuccess, onToggleView }) => {
         password,
         options: {
           data: {
-            invite_token: inviteToken
+            invite_token: inviteToken,
+            invite_id: inviteData.id
           },
           emailRedirectTo: `${process.env.REACT_APP_SITE_URL}/auth/callback`
         }
       });
 
       if (signUpError) throw signUpError;
+
+      // Mark invite as used
+      await markInviteAsUsed(inviteData.id);
 
       setMessage('Please check your email for the confirmation link to complete your registration.');
       if (onSuccess) onSuccess(data);
