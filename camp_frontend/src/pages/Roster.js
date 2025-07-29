@@ -1,4 +1,5 @@
 import React from 'react';
+import MemberDirectory from '../components/MemberDirectory/MemberDirectory';
 
 // PUBLIC_INTERFACE
 /**
@@ -16,17 +17,7 @@ const Roster = () => {
       </div>
       
       <div className="page-content">
-        <div className="feature-card">
-          <h3>Coming Soon</h3>
-          <p>Member directory with filtering and search capabilities.</p>
-          <ul>
-            <li>View all camp members</li>
-            <li>Filter by crew assignment</li>
-            <li>Check dues payment status</li>
-            <li>View buddy assignments</li>
-            <li>Contact information</li>
-          </ul>
-        </div>
+        <MemberDirectory />
       </div>
     </div>
   );
