@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
+import ProfileEditor from './ProfileEditor';
 import './MemberDirectory.css';
+import './ProfileEditor.css';
 
 // PUBLIC_INTERFACE
 /**
@@ -14,6 +16,7 @@ const MemberDirectory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedView, setSelectedView] = useState(null);
+  const [editingMember, setEditingMember] = useState(null);
 
   useEffect(() => {
     fetchMembers();
@@ -84,6 +87,11 @@ const MemberDirectory = () => {
           member.id === payload.new.id ? { ...member, ...payload.new } : member
         )
       );
+      
+      // Update selected view if the updated member is currently being viewed
+      if (selectedView?.id === payload.new.id) {
+        setSelectedView(prev => ({ ...prev, ...payload.new }));
+      }
     }
   };
 
@@ -100,6 +108,10 @@ const MemberDirectory = () => {
 
   const closeMemberProfile = () => {
     setSelectedView(null);
+  };
+
+  const handleProfileUpdate = () => {
+    fetchMembers();
   };
 
   if (loading) {
@@ -159,7 +171,15 @@ const MemberDirectory = () => {
         <div className="member-profile-modal">
           <div className="modal-content">
             <button className="modal-close" onClick={closeMemberProfile}>×</button>
-            <h2>{selectedView.name}</h2>
+            <div className="modal-header">
+              <h2>{selectedView.name}</h2>
+              <button 
+                className="btn btn-outline"
+                onClick={() => setEditingMember(selectedView)}
+              >
+                Edit Profile
+              </button>
+            </div>
             <div className="profile-details">
               <p><strong>Email:</strong> {selectedView.email}</p>
               <p><strong>Role:</strong> {selectedView.role}</p>
@@ -173,6 +193,13 @@ const MemberDirectory = () => {
           </div>
         </div>
       )}
+
+      <ProfileEditor
+        isOpen={!!editingMember}
+        onClose={() => setEditingMember(null)}
+        memberId={editingMember?.id}
+        onUpdate={handleProfileUpdate}
+      />
     </div>
   );
 };

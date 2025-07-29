@@ -123,6 +123,17 @@
   position: relative;
 }
 
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  margin: 0;
+}
+
 .modal-close {
   position: absolute;
   top: 1rem;
