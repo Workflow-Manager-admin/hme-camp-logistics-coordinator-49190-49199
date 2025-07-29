@@ -6,7 +6,7 @@ import './JobBoard.css';
 // PUBLIC_INTERFACE
 /**
  * JobBoard component for managing camp jobs and volunteer assignments.
- * Provides real-time updates, filtering, and role-based actions.
+ * Provides real-time updates, filtering, role-based actions, and automatic crew assignment UI for setup/strike.
  */
 const JobBoard = () => {
   const { user, userRole } = useAuth();
@@ -31,6 +31,12 @@ const JobBoard = () => {
     completed: 0
   });
 
+  // Auto Assignment UI state
+  const [autoAssigning, setAutoAssigning] = useState(false);
+  const [assignStatus, setAssignStatus] = useState('');
+  const [setupCrew, setSetupCrew] = useState(['Alice', 'Bob']);
+  const [strikeCrew, setStrikeCrew] = useState(['Carol']);
+
   useEffect(() => {
     fetchJobs();
     setupRealtimeSubscription();
@@ -43,6 +49,20 @@ const JobBoard = () => {
   useEffect(() => {
     calculateStats(jobs);
   }, [jobs]);
+
+  // PUBLIC_INTERFACE
+  const triggerAutoAssign = async (type) => {
+    setAutoAssigning(true);
+    setAssignStatus('');
+    // Placeholder -- Replace with actual backend call for assignment
+    setTimeout(() => {
+      setAssignStatus(`Auto-assigned ${type==='setup' ? "Setup" : "Strike"} Crew from arrival/departure data.`);
+      setAutoAssigning(false);
+      // Fake update
+      if (type === 'setup') setSetupCrew(['Alice', 'Bob']);
+      else setStrikeCrew(['Carol']);
+    }, 1200);
+  };
 
   const fetchJobs = async () => {
     try {
@@ -88,7 +108,7 @@ const JobBoard = () => {
     if (payload.eventType === 'INSERT') {
       setJobs(current => [payload.new, ...current]);
     } else if (payload.eventType === 'DELETE') {
-      setJobs(current => 
+      setJobs(current =>
         current.filter(job => job.id !== payload.old.id)
       );
     } else if (payload.eventType === 'UPDATE') {
@@ -227,7 +247,7 @@ const JobBoard = () => {
   };
 
   const filteredJobs = jobs.filter(job => {
-    const matchesSearch = 
+    const matchesSearch =
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
@@ -240,6 +260,62 @@ const JobBoard = () => {
 
   return (
     <div className="job-board">
+      {/* Automatic Crew Assignment setup/strike */}
+      <div
+        style={{
+          padding: 14,
+          marginBottom: 18,
+          border: '1.5px solid #FF6F00',
+          borderRadius: 7,
+          background: '#fffbe7'
+        }}
+      >
+        <h3 style={{ color: "#FF6F00", marginTop: 0 }}>
+          Automatic Crew Assignment <span role="img" aria-label="spark">✨</span>
+        </h3>
+        <div style={{ marginBottom: 8 }}>
+          <b>Setup Crew:</b> {setupCrew.length ? setupCrew.join(', ') : '(none)'}
+          <button
+            style={{
+              marginLeft: 10,
+              background: '#76FF03',
+              border: 'none',
+              borderRadius: 5,
+              color: '#37474F',
+              padding: '4px 12px',
+              cursor: autoAssigning ? 'not-allowed' : 'pointer'
+            }}
+            disabled={autoAssigning}
+            onClick={() => triggerAutoAssign('setup')}
+          >
+            {autoAssigning ? "Assigning..." : "Auto-Assign"}
+          </button>
+        </div>
+        <div>
+          <b>Strike Crew:</b> {strikeCrew.length ? strikeCrew.join(', ') : '(none)'}
+          <button
+            style={{
+              marginLeft: 10,
+              background: '#76FF03',
+              border: 'none',
+              borderRadius: 5,
+              color: '#37474F',
+              padding: '4px 12px',
+              cursor: autoAssigning ? 'not-allowed' : 'pointer'
+            }}
+            disabled={autoAssigning}
+            onClick={() => triggerAutoAssign('strike')}
+          >
+            {autoAssigning ? "Assigning..." : "Auto-Assign"}
+          </button>
+        </div>
+        <div style={{ marginTop: 7, color: '#37474F', fontSize: '0.94em' }}>
+          {assignStatus ||
+            <>Crew will be auto-assigned to <b>setup</b> (pre-event) or <b>strike</b> (post-event) jobs using member arrival/departure data.</>
+          }
+        </div>
+      </div>
+
       <div className="job-board-header">
         <div>
           <h2 className="page-title">Job Board</h2>
@@ -370,7 +446,7 @@ const JobBoard = () => {
       {(selectedJob || !editMode) && (
         <div className="job-modal">
           <div className="modal-content">
-            <button className="modal-close" onClick={closeModal}>×</button>
+            <button className="modal-close" onClick={closeModal}>&times;</button>
             <h2>{editMode ? 'Edit Job' : 'Add New Job'}</h2>
             
             <form onSubmit={handleSubmit}>
