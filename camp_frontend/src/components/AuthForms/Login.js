@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
+import { useAuth } from '../../contexts/AuthContext';
 import './styles.css';
 
 // PUBLIC_INTERFACE
@@ -7,29 +8,24 @@ import './styles.css';
  * Login form component that handles user authentication using Supabase Auth.
  * Provides email/password login with error handling and success feedback.
  */
-const Login = ({ onSuccess, onToggleView }) => {
+const Login = ({ onToggleView }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [message, setMessage] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setMessage(null);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (signInError) throw signInError;
-
-      setMessage('Login successful!');
-      if (onSuccess) onSuccess(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -72,10 +68,6 @@ const Login = ({ onSuccess, onToggleView }) => {
 
           {error && (
             <div className="auth-feedback error">{error}</div>
-          )}
-
-          {message && (
-            <div className="auth-feedback success">{message}</div>
           )}
 
           <button 

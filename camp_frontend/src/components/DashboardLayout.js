@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 import SidebarNav from './SidebarNav';
 import ThemeToggle from './ThemeToggle';
 import './DashboardLayout.css';
@@ -13,10 +13,16 @@ import './DashboardLayout.css';
 const DashboardLayout = ({ theme, onThemeToggle }) => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { signOut, userRole } = useAuth();
 
   // PUBLIC_INTERFACE
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
   };
 
   return (
@@ -34,12 +40,14 @@ const DashboardLayout = ({ theme, onThemeToggle }) => {
           </button>
           <h1 className="dashboard-title">HME Camp Logistics</h1>
           <div className="dashboard-header-actions">
+            {userRole === 'admin' && (
+              <span className="admin-badge" style={{ marginRight: '1rem', color: 'var(--primary-color)' }}>
+                Admin
+              </span>
+            )}
             <button
               className="btn btn-outline"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                navigate('/');
-              }}
+              onClick={handleSignOut}
               style={{ marginRight: '1rem' }}
             >
               Sign Out
