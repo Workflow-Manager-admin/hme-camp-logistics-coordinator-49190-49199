@@ -1,47 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import DashboardLayout from './components/DashboardLayout';
+import Home from './pages/Home';
+import Roster from './pages/Roster';
+import Jobs from './pages/Jobs';
+import Meals from './pages/Meals';
+import Calendar from './pages/Calendar';
+import Accommodations from './pages/Accommodations';
+import Payments from './pages/Payments';
 import './App.css';
 
 // PUBLIC_INTERFACE
+/**
+ * Main App component that handles routing and global state management.
+ * Provides the overall application structure and theme management.
+ */
 function App() {
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState(() => {
+    // Load theme from localStorage or default to light
+    return localStorage.getItem('theme') || 'light';
+  });
 
-  // Effect to apply theme to document element
+  // Effect to apply theme to document element and persist to localStorage
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
   }, [theme]);
 
   // PUBLIC_INTERFACE
+  /**
+   * Toggles between light and dark themes and persists the selection.
+   */
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
 
   return (
     <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Router>
+        <Routes>
+          <Route path="/" element={<DashboardLayout theme={theme} onThemeToggle={toggleTheme} />}>
+            <Route index element={<Home />} />
+            <Route path="home" element={<Home />} />
+            <Route path="roster" element={<Roster />} />
+            <Route path="jobs" element={<Jobs />} />
+            <Route path="meals" element={<Meals />} />
+            <Route path="calendar" element={<Calendar />} />
+            <Route path="accommodations" element={<Accommodations />} />
+            <Route path="payments" element={<Payments />} />
+          </Route>
+        </Routes>
+      </Router>
     </div>
   );
 }
