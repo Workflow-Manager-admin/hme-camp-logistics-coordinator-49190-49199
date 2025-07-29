@@ -68,7 +68,12 @@ const EventCalendarContainer = styled('div')(({ theme }) => ({
  * EventCalendar component for displaying and managing camp events
  * Supports viewing, adding, and editing events with role-based access control
  */
-const EventCalendar = () => {
+/**
+ * PROPS
+ * showMineOnly: boolean - if true, only events created by this user are shown
+ * userId: string - the current user's id
+ */
+const EventCalendar = ({ showMineOnly = false, userId = null }) => {
   const [events, setEvents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -259,7 +264,11 @@ const EventCalendar = () => {
     }
   };
 
-  const filteredEvents = events.filter(event => filters[event.type]);
+  // Filter logic for tabs and filter buttons
+  let filteredEvents = events.filter(event => filters[event.type]);
+  if (showMineOnly && userId) {
+    filteredEvents = filteredEvents.filter(event => event.createdBy === userId);
+  }
 
   return (
     <EventCalendarContainer>

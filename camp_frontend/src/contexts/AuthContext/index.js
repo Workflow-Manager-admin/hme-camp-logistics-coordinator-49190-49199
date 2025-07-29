@@ -1,71 +1,73 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient';
+import React, { createContext, useState, useEffect, useContext } from "react";
+import { supabase } from "../../supabaseClient";
+
+export const AuthContext = createContext();
 
 // PUBLIC_INTERFACE
-/**
- * Context for managing authentication state and user session.
- * Provides session data and auth-related utilities to child components.
- */
-const AuthContext = createContext({});
-
-// PUBLIC_INTERFACE
-/**
- * Hook to access authentication context data and functions.
- * @returns {Object} Authentication context value
- */
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
-
-// PUBLIC_INTERFACE
-/**
- * Provider component that wraps app to provide authentication context.
- * Manages session state and user roles.
- */
-export const AuthProvider = ({ children }) => {
-  const [session, setSession] = useState(null);
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState(null);
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setUserRole(session.user.user_metadata.role || 'member');
-      }
-      setLoading(false);
-    });
+  // Fetch the user's profile from the profiles table
+  const fetchProfile = async (userObj) => {
+    if (!userObj) {
+      setRole(null);
+      return;
+    }
+    // Fetch matching profile row for user
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userObj.id)
+      .single();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setUserRole(session.user.user_metadata.role || 'member');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const value = {
-    session,
-    user,
-    userRole,
-    loading,
-    isAdmin: userRole === 'admin',
-    isAuthenticated: !!session,
-    signOut: () => supabase.auth.signOut()
+    if (!error && data?.role) {
+      setRole(data.role);
+    } else {
+      setRole("member");
+    }
   };
 
+  useEffect(() => {
+    async function refreshOnSession() {
+      const sessionResult = await supabase.auth.getSession();
+      let userObj = null;
+      if (sessionResult.data?.session) {
+        userObj = sessionResult.data.session.user;
+        setUser(userObj);
+        fetchProfile(userObj);
+      } else {
+        setUser(null);
+        setRole(null);
+      }
+      setLoading(false);
+    }
+
+    refreshOnSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, _session) => {
+      refreshOnSession();
+    });
+
+    return () => {
+      if (listener && listener.subscription) {
+        listener.subscription.unsubscribe();
+      }
+    };
+    // eslint-disable-next-line
+  }, []);
+
+  const isAdmin = role === "admin";
+
   return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, role, isAdmin, loading }}>
+      {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export default AuthContext;
+// PUBLIC_INTERFACE
+export function useAuth() {
+  return useContext(AuthContext);
+}
