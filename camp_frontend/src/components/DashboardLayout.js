@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 import SidebarNav from './SidebarNav';
 import ThemeToggle from './ThemeToggle';
 import './DashboardLayout.css';
@@ -10,6 +11,7 @@ import './DashboardLayout.css';
  * with sidebar navigation and main content area.
  */
 const DashboardLayout = ({ theme, onThemeToggle }) => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // PUBLIC_INTERFACE
@@ -32,6 +34,16 @@ const DashboardLayout = ({ theme, onThemeToggle }) => {
           </button>
           <h1 className="dashboard-title">HME Camp Logistics</h1>
           <div className="dashboard-header-actions">
+            <button
+              className="btn btn-outline"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate('/');
+              }}
+              style={{ marginRight: '1rem' }}
+            >
+              Sign Out
+            </button>
             <ThemeToggle theme={theme} onToggle={onThemeToggle} />
           </div>
         </header>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { supabase } from './supabaseClient';
 import DashboardLayout from './components/DashboardLayout';
+import AuthForms from './components/AuthForms';
 import Home from './pages/Home';
 import Roster from './pages/Roster';
 import Jobs from './pages/Jobs';
@@ -16,10 +18,29 @@ import './App.css';
  * Provides the overall application structure and theme management.
  */
 function App() {
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState(() => {
     // Load theme from localStorage or default to light
     return localStorage.getItem('theme') || 'light';
   });
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Effect to apply theme to document element and persist to localStorage
   useEffect(() => {
@@ -39,7 +60,10 @@ function App() {
     <div className="App">
       <Router>
         <Routes>
-          <Route path="/" element={<DashboardLayout theme={theme} onThemeToggle={toggleTheme} />}>
+          {!session ? (
+            <Route path="*" element={<AuthForms onAuthSuccess={({ session }) => setSession(session)} />} />
+          ) : (
+            <Route path="/" element={<DashboardLayout theme={theme} onThemeToggle={toggleTheme} />}>
             <Route index element={<Home />} />
             <Route path="home" element={<Home />} />
             <Route path="roster" element={<Roster />} />
@@ -48,7 +72,8 @@ function App() {
             <Route path="calendar" element={<Calendar />} />
             <Route path="accommodations" element={<Accommodations />} />
             <Route path="payments" element={<Payments />} />
-          </Route>
+            </Route>
+          )}
         </Routes>
       </Router>
     </div>
